@@ -3,6 +3,7 @@ import { checkJaipur } from './jaipur';
 import { extractContacts, emptyContacts, websiteOf, unwrapFacebookLink } from './contacts';
 import { scoreCompany } from './scoring';
 import { classify } from './categories';
+import { areaFromSignals } from './areas';
 
 export const metaLibraryUrlFor = (pageId: string) =>
   /^\d+$/.test(pageId)
@@ -66,6 +67,7 @@ export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new 
       pageUrl: first.pageUrl,
       avatarUrl: first.avatarUrl,
       category: classify(allText, first.pageCategories),
+      area: areaFromSignals(jaipur.signals),
       jaipur,
       ads: sorted,
       activeAds: s.activeAds,

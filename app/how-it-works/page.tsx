@@ -13,7 +13,6 @@ const STEPS = [
 export default function HowItWorks() {
   return (
     <div className="doc">
-      <span className="eyebrow">Guide</span>
       <h1>How Jaipur Ad Finder works</h1>
       <p className="lead">In four simple steps, the tool turns thousands of public ads into a ranked list of Jaipur businesses you can contact.</p>
 

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button, Tooltip } from '@fluentui/react-components';
-import { Megaphone24Regular, WeatherMoon20Regular, WeatherSunny20Regular } from '@fluentui/react-icons';
+import { WeatherMoon20Regular, WeatherSunny20Regular } from '@fluentui/react-icons';
+import { Logo } from './Logo';
 import { useThemeMode } from '@/app/providers';
 
 const NAV = [
@@ -17,7 +18,7 @@ export function AppHeader() {
   return (
     <header className="app-bar">
       <Link href="/" className="brand" aria-label="Jaipur Ad Finder home">
-        <span className="brand-mark"><Megaphone24Regular /></span>
+        <span className="brand-mark"><Logo /></span>
         <span className="brand-text">Jaipur Ad Finder</span>
       </Link>
       <nav className="app-nav" aria-label="Main">

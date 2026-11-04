@@ -2,70 +2,73 @@
 
 import * as React from 'react';
 import { Button, MessageBar, MessageBarBody, Badge } from '@fluentui/react-components';
-import {
-  ArrowClockwise20Regular,
-  Megaphone24Regular,
-  ShieldCheckmark20Regular,
-  DataTrending20Regular,
-  ArrowDownload20Regular,
-} from '@fluentui/react-icons';
+import { ArrowClockwise20Regular } from '@fluentui/react-icons';
 import type { Company } from '@/lib/types';
 import { useScan } from '@/components/useScan';
 import { ScanPanel } from '@/components/ScanPanel';
 import { Kpis, TopThree, Insights, CompanyTable } from '@/components/Results';
 import { CompanyDrawer } from '@/components/CompanyDrawer';
+import { JaipurMap } from '@/components/JaipurMap';
 
 export default function Dashboard() {
   const scan = useScan();
   const [open, setOpen] = React.useState<Company | null>(null);
+  const [area, setArea] = React.useState<string | null>(null);
   const r = scan.result;
+
+  // While a new search runs, old dots leave the map until fresh results arrive.
+  const plotted = scan.running && scan.step < 3 ? [] : (r?.companies ?? []);
+
+  const pickArea = (a: string | null) => {
+    setArea(a);
+    if (a) document.getElementById('all-companies')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <>
-      <div className="hero">
-        <div className="hero-text">
-          <span className="eyebrow">Meta Ads Library · Jaipur</span>
-          <h1>Find Jaipur businesses that advertise — and see who does it best.</h1>
-          <p>
-            This tool searches Facebook and Instagram ads, keeps only businesses in Jaipur, ranks them by how well
-            their ads are performing, and collects their phone numbers, emails and websites.
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-left">
+          <h1 id="hero-title">See which Jaipur businesses are winning with ads.</h1>
+          <p className="hero-lead">
+            Search Facebook and Instagram ads, keep only businesses in Jaipur, rank them by how well their ads perform,
+            and get their phone numbers, emails and websites.
           </p>
-          <ol className="hero-steps" aria-label="How it works">
-            <li><span className="step-dot">1</span>Search ads</li>
-            <li><span className="step-dot">2</span>Keep Jaipur only</li>
-            <li><span className="step-dot">3</span>Rank the best</li>
-            <li><span className="step-dot">4</span>Get contacts</li>
-          </ol>
-          <div className="trust-row">
-            <span><ShieldCheckmark20Regular /> Public Meta Ads Library data</span>
-            <span><DataTrending20Regular /> Transparent 0–100 score</span>
-            <span><ArrowDownload20Regular /> Export to Excel</span>
-          </div>
-          <div style={{ marginTop: 20 }}>
+          <div className="mode-line">
             {scan.liveReady === null ? null : scan.liveReady ? (
-              <Badge appearance="tint" color="success" size="large">● Live search connected</Badge>
+              <Badge appearance="tint" color="success" shape="rounded">Live search connected</Badge>
             ) : (
-              <Badge appearance="tint" color="warning" size="large">Demo mode: live search not connected</Badge>
+              <Badge appearance="tint" color="warning" shape="rounded">Demo mode: live search not connected</Badge>
             )}
           </div>
+          <ScanPanel
+            liveReady={scan.liveReady}
+            running={scan.running}
+            step={scan.step}
+            detail={scan.detail}
+            error={scan.error}
+            onLive={scan.runLive}
+            onDemo={() => {
+              setArea(null);
+              scan.runDemo();
+            }}
+            onCancel={scan.cancel}
+            onDismissError={() => scan.setError(null)}
+          />
         </div>
-        <ScanPanel
-          liveReady={scan.liveReady}
-          running={scan.running}
-          step={scan.step}
-          detail={scan.detail}
-          error={scan.error}
-          onLive={scan.runLive}
-          onDemo={scan.runDemo}
-          onCancel={scan.cancel}
-          onDismissError={() => scan.setError(null)}
+        <JaipurMap
+          companies={plotted}
+          scanning={scan.running && scan.step < 3}
+          revealKey={r?.scannedAt ?? 'none'}
+          activeArea={area}
+          onOpen={setOpen}
+          onPickArea={pickArea}
         />
-      </div>
+      </section>
 
-      {r ? (
+      {r && (
         <>
           {r.mode === 'demo' && (
-            <MessageBar layout="multiline" intent="warning">
+            <MessageBar layout="multiline" intent="warning" className="demo-note">
               <MessageBarBody>
                 You are looking at <b>sample data</b>. The businesses and contact details are fictional, but they go through
                 the same Jaipur check and scoring as real ads.
@@ -74,22 +77,22 @@ export default function Dashboard() {
           )}
           <Kpis result={r} />
           <TopThree companies={r.companies} onOpen={setOpen} />
-          <Insights companies={r.companies} />
-          <CompanyTable result={r} onOpen={setOpen} />
+          <Insights companies={r.companies} onPickArea={pickArea} />
+          <CompanyTable result={r} onOpen={setOpen} area={area} onClearArea={() => setArea(null)} />
           <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <Button appearance="subtle" icon={<ArrowClockwise20Regular />} onClick={scan.clear} disabled={scan.running}>
+            <Button
+              appearance="subtle"
+              icon={<ArrowClockwise20Regular />}
+              onClick={() => {
+                setArea(null);
+                scan.clear();
+              }}
+              disabled={scan.running}
+            >
               Clear results
             </Button>
           </div>
         </>
-      ) : (
-        !scan.running && (
-          <div className="surface empty">
-            <Megaphone24Regular />
-            <h3>No results yet</h3>
-            <p>Press <b>Find companies</b> to search live ads, or <b>Show sample data</b> to see how it works.</p>
-          </div>
-        )
       )}
 
       <CompanyDrawer company={open} onClose={() => setOpen(null)} isDemo={r?.mode === 'demo'} />

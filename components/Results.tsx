@@ -32,7 +32,48 @@ import {
 import type { Company, ScanResult } from '@/lib/types';
 import { contactCount } from '@/lib/contacts';
 import { companiesToCsv } from '@/lib/csv';
-import { ScoreBar, TierBadge, JaipurBadge, plural } from './ui';
+import { ScoreBar, TierBadge, JaipurBadge, plural, tierFill } from './ui';
+
+/* ---------- Count-up number: runs once when new results arrive ---------- */
+function CountUp({ value }: { value: number }) {
+  const [shown, setShown] = React.useState(0);
+  React.useEffect(() => {
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
+      setShown(Math.round(value * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{shown.toLocaleString('en-IN')}</>;
+}
+
+/* ---------- Score ring ---------- */
+export function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
+  const r = size / 2 - 6;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="score-ring" role="img" aria-label={`Score ${score} out of 100`}>
+      <circle cx={size / 2} cy={size / 2} r={r} className="ring-track" />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        className="ring-fill"
+        stroke={tierFill(score)}
+        strokeDasharray={c}
+        style={{ ['--ring-len' as string]: `${c}`, ['--ring-off' as string]: `${c * (1 - score / 100)}` }}
+        strokeDashoffset={c * (1 - score / 100)}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" className="ring-num">{score}</text>
+    </svg>
+  );
+}
 
 /* ---------- KPI tiles ---------- */
 export function Kpis({ result }: { result: ScanResult }) {
@@ -52,7 +93,7 @@ export function Kpis({ result }: { result: ScanResult }) {
         <div className="kpi" key={t.label}>
           <div className="kpi-icon">{t.icon}</div>
           <div>
-            <div className="kpi-value">{t.value.toLocaleString('en-IN')}</div>
+            <div className="kpi-value"><CountUp value={t.value} /></div>
             <div className="kpi-label">{t.label}</div>
           </div>
         </div>
@@ -79,14 +120,16 @@ export function TopThree({ companies, onOpen }: { companies: Company[]; onOpen: 
               <Avatar name={c.name} color="colorful" image={c.avatarUrl ? { src: c.avatarUrl } : undefined} />
               <div style={{ minWidth: 0 }}>
                 <div className="podium-name">{c.name}</div>
-                <div className="podium-cat">{c.category}</div>
+                <div className="podium-cat">{c.category}{c.area ? ` in ${c.area}` : ''}</div>
               </div>
             </div>
             <div className="podium-score">
-              <b>{c.score}</b>
-              <span>/ 100 performance score</span>
+              <ScoreRing score={c.score} />
+              <div>
+                <TierBadge tier={c.tier} />
+                <span className="podium-score-note">Performance score out of 100</span>
+              </div>
             </div>
-            <div><TierBadge tier={c.tier} /></div>
             <div className="podium-stats">
               <div><b>{c.activeAds}</b>active ads</div>
               <div><b>{c.longestRunningDays}d</b>longest ad</div>
@@ -100,17 +143,15 @@ export function TopThree({ companies, onOpen }: { companies: Company[]; onOpen: 
 }
 
 /* ---------- Insights: categories + score spread ---------- */
-export function Insights({ companies }: { companies: Company[] }) {
+export function Insights({ companies, onPickArea }: { companies: Company[]; onPickArea: (a: string) => void }) {
   const byCat = new Map<string, number>();
   companies.forEach((c) => byCat.set(c.category, (byCat.get(c.category) ?? 0) + 1));
   const cats = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1]);
   const maxCat = Math.max(1, ...cats.map((c) => c[1]));
-  const tiers = ['Top performer', 'Strong', 'Moderate', 'Getting started'].map((t) => ({
-    t,
-    n: companies.filter((c) => c.tier === t).length,
-  }));
-  const maxTier = Math.max(1, ...tiers.map((x) => x.n));
-  const fills = ['var(--colorPaletteGreenBackground3)', 'var(--colorBrandBackground)', 'var(--colorPaletteMarigoldBackground3)', 'var(--colorNeutralStroke1)'];
+  const byArea = new Map<string, number>();
+  companies.forEach((c) => c.area && byArea.set(c.area, (byArea.get(c.area) ?? 0) + 1));
+  const areas = Array.from(byArea.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxArea = Math.max(1, ...areas.map((a) => a[1]));
   return (
     <div className="insights" style={{ marginTop: 16 }}>
       <section className="surface">
@@ -127,15 +168,16 @@ export function Insights({ companies }: { companies: Company[] }) {
         </div>
       </section>
       <section className="surface">
-        <h2>Performance levels</h2>
-        <p className="sub">How many companies are in each level</p>
+        <h2>Busiest areas</h2>
+        <p className="sub">Click an area to list only its companies</p>
         <div className="bar-list">
-          {tiers.map((x, i) => (
-            <div className="bar-row" key={x.t} style={{ gridTemplateColumns: '120px 1fr 28px' }}>
-              <span>{x.t}</span>
-              <div className="bar-track"><div className="bar-fill" style={{ width: `${(x.n / maxTier) * 100}%`, background: fills[i] }} /></div>
-              <b>{x.n}</b>
-            </div>
+          {areas.length === 0 && <p className="sub">No areas were named in these ads.</p>}
+          {areas.map(([name, n]) => (
+            <button className="bar-row bar-button" key={name} onClick={() => onPickArea(name)}>
+              <span>{name}</span>
+              <div className="bar-track"><div className="bar-fill bar-pink" style={{ width: `${(n / maxArea) * 100}%` }} /></div>
+              <b>{n}</b>
+            </button>
           ))}
         </div>
       </section>
@@ -153,7 +195,17 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'name', label: 'Name (A–Z)' },
 ];
 
-export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (c: Company) => void }) {
+export function CompanyTable({
+  result,
+  onOpen,
+  area,
+  onClearArea,
+}: {
+  result: ScanResult;
+  onOpen: (c: Company) => void;
+  area: string | null;
+  onClearArea: () => void;
+}) {
   const [q, setQ] = React.useState('');
   const [cat, setCat] = React.useState('all');
   const [onlyPhone, setOnlyPhone] = React.useState(false);
@@ -167,7 +219,8 @@ export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (
     const needle = q.trim().toLowerCase();
     const list = result.companies.filter(
       (c) =>
-        (!needle || c.name.toLowerCase().includes(needle) || c.category.toLowerCase().includes(needle)) &&
+        (!needle || [c.name, c.category, c.area ?? ''].some((v) => v.toLowerCase().includes(needle))) &&
+        (!area || c.area === area) &&
         (cat === 'all' || c.category === cat) &&
         (!onlyPhone || c.contacts.phones.length > 0) &&
         (!strictJaipur || c.jaipur.level !== 'Low')
@@ -179,7 +232,7 @@ export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (
       name: (a, b) => a.name.localeCompare(b.name),
     };
     return [...list].sort(by[sort]);
-  }, [result.companies, q, cat, onlyPhone, strictJaipur, sort]);
+  }, [result.companies, q, cat, onlyPhone, strictJaipur, sort, area]);
 
   const download = () => {
     const blob = new Blob([companiesToCsv(rows)], { type: 'text/csv;charset=utf-8' });
@@ -192,13 +245,19 @@ export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (
 
   return (
     <>
-      <div className="section-title">
-        <h2>All companies</h2>
-        <p>Click any row to see the company’s ads and contact details.</p>
+      <div className="section-title" id="all-companies">
+        <h2>{area ? `Companies in ${area}` : 'All companies'}</h2>
+        {area ? (
+          <button className="area-chip" onClick={onClearArea}>
+            Show all areas <span aria-hidden>×</span>
+          </button>
+        ) : (
+          <p>Click any row to see the company’s ads and contact details.</p>
+        )}
       </div>
       <div className="table-card">
         <div className="toolbar">
-          <SearchBox className="grow" placeholder="Search by company or business type" value={q} onChange={(_, d) => setQ(d.value)} aria-label="Search companies" />
+          <SearchBox className="grow" placeholder="Search by company, business type or area" value={q} onChange={(_, d) => setQ(d.value)} aria-label="Search companies" />
           <Dropdown
             aria-label="Business type"
             value={cat === 'all' ? 'All business types' : cat}
@@ -262,7 +321,7 @@ export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (
                       <Avatar size={32} name={c.name} color="colorful" image={c.avatarUrl ? { src: c.avatarUrl } : undefined} />
                       <div>
                         <div className="company-name">{c.name}</div>
-                        <div className="company-sub">{c.category}</div>
+                        <div className="company-sub">{c.category}{c.area ? ` in ${c.area}` : ''}</div>
                       </div>
                     </div>
                   </TableCell>

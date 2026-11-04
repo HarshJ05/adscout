@@ -12,6 +12,7 @@
 
 ## Features
 
+- **Live map of Jaipur** — every advertiser plotted on its area, sized by score; a radar sweep while searching; click an area to filter
 - **Search the Meta Ads Library** for Jaipur advertisers by business type (real estate, coaching, clinics, cafés, jewellery…)
 - **Jaipur-only filter** — every advertiser is verified by city name, local areas, 302xxx PIN codes and the 0141 phone code
 - **Performance Score (0–100)** from public ad signals: live ads, ad lifespan, platforms and new ads
@@ -21,9 +22,9 @@
 - **Demo mode** with clearly fictional sample data, so it can be presented without an API key
 - **Production-ready**: tests, lint, type checks, CI on every push, security headers, optional password lock
 
-| Dark mode | Company details |
+| Dark mode with area filter | Top performers and busiest areas |
 | --- | --- |
-| ![Dark mode](docs/dark-mode.png) | ![Company details](docs/company-details.png) |
+| ![Dark mode](docs/dark-mode.png) | ![Top performers](docs/company-details.png) |
 
 ## Tech stack
 

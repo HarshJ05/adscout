@@ -1,6 +1,6 @@
 {
   "name": "jaipur-ad-finder",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Find Jaipur businesses advertising on Meta, rank the best performers and collect their contact details.",
   "scripts": {

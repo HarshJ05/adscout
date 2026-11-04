@@ -53,6 +53,8 @@ export interface Company {
   pageUrl: string | null;
   avatarUrl: string | null;
   category: string;
+  /** Jaipur area named in the ads (e.g. "Malviya Nagar"), or null when only the city is mentioned */
+  area: string | null;
   jaipur: JaipurCheck;
   ads: Ad[];
   activeAds: number;

@@ -42,11 +42,8 @@ export function ScanPanel(p: Props) {
   const all = picked.length === 0;
 
   return (
-    <section className="surface" aria-labelledby="scan-title">
-      <h2 id="scan-title">Start a new search</h2>
-      <p className="sub">Pick the types of business to look for, then press Find companies.</p>
-
-      <span className="field-label">Business types</span>
+    <section className="surface scan-card" aria-label="Search settings">
+      <span className="field-label">Which businesses?</span>
       <div className="chip-row" role="group" aria-label="Business types">
         <ToggleButton shape="circular" checked={all} onClick={() => setPicked([])} disabled={p.running}>
           All businesses
@@ -58,7 +55,7 @@ export function ScanPanel(p: Props) {
         ))}
       </div>
 
-      <span className="field-label" id="depth-label">How deep to search</span>
+      <span className="field-label" id="depth-label">How many ads to check</span>
       <Dropdown
         aria-labelledby="depth-label"
         value={LIMITS.find((l) => l.value === limit)?.label}

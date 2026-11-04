@@ -44,3 +44,11 @@ test('demo data runs through the same pipeline and stays fictional', () => {
     for (const w of c.contacts.websites) assert.match(w, /\.example$/);
   }
 });
+
+test('every sample company is placed on a known Jaipur area', async () => {
+  const { coordsFor } = await import('../lib/areas');
+  for (const c of demoResult(today).companies) {
+    assert.ok(c.area, `${c.name} has an area`);
+    assert.ok(coordsFor(c.area), `${c.area} has map coordinates`);
+  }
+});
