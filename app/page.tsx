@@ -2,7 +2,13 @@
 
 import * as React from 'react';
 import { Button, MessageBar, MessageBarBody, Badge } from '@fluentui/react-components';
-import { ArrowClockwise20Regular, Megaphone24Regular } from '@fluentui/react-icons';
+import {
+  ArrowClockwise20Regular,
+  Megaphone24Regular,
+  ShieldCheckmark20Regular,
+  DataTrending20Regular,
+  ArrowDownload20Regular,
+} from '@fluentui/react-icons';
 import type { Company } from '@/lib/types';
 import { useScan } from '@/components/useScan';
 import { ScanPanel } from '@/components/ScanPanel';
@@ -24,17 +30,22 @@ export default function Dashboard() {
             This tool searches Facebook and Instagram ads, keeps only businesses in Jaipur, ranks them by how well
             their ads are performing, and collects their phone numbers, emails and websites.
           </p>
-          <div className="hero-steps">
-            <span><span className="step-dot">1</span>Search ads</span>
-            <span><span className="step-dot">2</span>Keep Jaipur only</span>
-            <span><span className="step-dot">3</span>Rank the best</span>
-            <span><span className="step-dot">4</span>Get contacts</span>
+          <ol className="hero-steps" aria-label="How it works">
+            <li><span className="step-dot">1</span>Search ads</li>
+            <li><span className="step-dot">2</span>Keep Jaipur only</li>
+            <li><span className="step-dot">3</span>Rank the best</li>
+            <li><span className="step-dot">4</span>Get contacts</li>
+          </ol>
+          <div className="trust-row">
+            <span><ShieldCheckmark20Regular /> Public Meta Ads Library data</span>
+            <span><DataTrending20Regular /> Transparent 0–100 score</span>
+            <span><ArrowDownload20Regular /> Export to Excel</span>
           </div>
           <div style={{ marginTop: 20 }}>
             {scan.liveReady === null ? null : scan.liveReady ? (
-              <Badge appearance="tint" color="success" size="large">Live search connected</Badge>
+              <Badge appearance="tint" color="success" size="large">● Live search connected</Badge>
             ) : (
-              <Badge appearance="tint" color="warning" size="large">Demo mode — live search not connected</Badge>
+              <Badge appearance="tint" color="warning" size="large">Demo mode: live search not connected</Badge>
             )}
           </div>
         </div>

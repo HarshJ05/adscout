@@ -43,6 +43,8 @@ export function useScan() {
   const cancelRef = React.useRef(false);
 
   React.useEffect(() => {
+    // Saved results live in the browser only, so they can be read after the first render (keeps SSR and client in sync).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResult(load());
     fetch('/api/config')
       .then((r) => r.json())

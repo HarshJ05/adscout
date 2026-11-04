@@ -35,8 +35,10 @@ import { TierBadge, JaipurBadge, waLink, plural } from './ui';
 export function CompanyDrawer({ company, onClose, isDemo }: { company: Company | null; onClose: () => void; isDemo: boolean }) {
   const toasterId = useId('toaster');
   const { dispatchToast } = useToastController(toasterId);
-  const [showAll, setShowAll] = React.useState(false);
-  React.useEffect(() => setShowAll(false), [company?.id]);
+  // "Show all ads" is remembered per company, so opening another company starts collapsed.
+  const [expandedId, setExpandedId] = React.useState<string | null>(null);
+  const showAll = !!company && expandedId === company.id;
+  const setShowAll = (fn: (x: boolean) => boolean) => setExpandedId(fn(showAll) && company ? company.id : null);
 
   const copy = async (v: string) => {
     try {

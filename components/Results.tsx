@@ -295,7 +295,7 @@ export function CompanyTable({ result, onOpen }: { result: ScanResult; onOpen: (
         {rows.length === 0 && <div className="empty">No companies match these filters.</div>}
         <div className="table-foot">
           Showing {plural(rows.length, 'company', 'companies')} of {result.companies.length} ·{' '}
-          {plural(result.adsChecked, 'ad')} checked · {result.rejected} advertisers outside Jaipur removed ·{' '}
+          {plural(result.adsChecked, 'ad')} checked · {plural(result.rejected, 'advertiser')} outside Jaipur removed ·{' '}
           {result.mode === 'demo' ? <Badge appearance="tint" color="warning">Sample data</Badge> : <Badge appearance="tint" color="success">Live data</Badge>}{' '}
           · Updated {new Date(result.scannedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
         </div>

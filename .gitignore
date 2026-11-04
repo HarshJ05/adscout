@@ -1,6 +1,23 @@
+# dependencies
 node_modules
+
+# Next.js build output
 .next
+out
+build
+*.tsbuildinfo
+
+# secrets — never commit these
 .env
 .env.local
+.env.*.local
+
+# Vercel
 .vercel
-*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
