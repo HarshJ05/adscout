@@ -2,7 +2,7 @@
 
 **Find the local businesses that advertise on Facebook and Instagram in your city, see who is doing it best, and reach them.**
 
-![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/HarshJ05/adscout/actions/workflows/ci.yml/badge.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react)
 ![Three.js](https://img.shields.io/badge/Three.js-WebGL-000?logo=three.js)

@@ -86,15 +86,17 @@ export function CityMap({ city, companies, scanning, revealKey, activeArea, onOp
   // Place each company on its area, spreading companies in the same area on a small spiral.
   const dots = React.useMemo(() => {
     const perArea = new Map<string, number>();
-    return companies.map((c, rank) => {
-      const key = c.area ?? '__city';
+    return companies.flatMap((c, rank) => {
+      const at = coordsIn(city, c.area);
+      if (!at) return []; // no area named in the ads: listed in the note under the map, not guessed onto it
+      const key = c.area as string;
       const n = perArea.get(key) ?? 0;
       perArea.set(key, n + 1);
-      const [lat, lng] = coordsIn(city, c.area) ?? city.center;
+      const [lat, lng] = at;
       const base = px(lat, lng);
       const angle = hash(c.id) * Math.PI * 2 + n * 2.4;
       const dist = n === 0 ? 0 : 10 + n * 6;
-      return { c, rank, x: base.x + Math.cos(angle) * dist, y: base.y + Math.sin(angle) * dist, r: 5 + c.score / 12 };
+      return [{ c, rank, x: base.x + Math.cos(angle) * dist, y: base.y + Math.sin(angle) * dist, r: 5 + c.score / 12 }];
     });
   }, [companies, city, px]);
 
@@ -123,6 +125,14 @@ export function CityMap({ city, companies, scanning, revealKey, activeArea, onOp
     return placeLabels(items, blocked, H);
   }, [areas, dots, city, px, H, isJaipur]);
   const counts = new Map(areas);
+  const orientationLabels = React.useMemo(() => {
+    const pts = orientationFor(city).map((a) => ({ key: a, ...px(...coordsIn(city, a)!), r: 3, text: a }));
+    const placed = placeLabels(pts, pts.map((q) => ({ x: q.x - 4, y: q.y - 4, w: 8, h: 8 })), H);
+    return placed.map((l) => {
+      const p = pts.find((q) => q.key === l.key)!;
+      return { ...l, px: p.x, py: p.y };
+    });
+  }, [city, px, H]);
   const centre = px(...city.center);
   const wc1 = px(26.933, 75.808);
   const wc2 = px(26.913, 75.838);
@@ -138,7 +148,7 @@ export function CityMap({ city, companies, scanning, revealKey, activeArea, onOp
             {scanning
               ? 'Searching the Meta Ads Library…'
               : hasResults
-                ? `${companies.length} companies plotted by area. Click a dot for details, or an area to filter the list.`
+                ? `${dots.length} of ${companies.length} companies named an area and are plotted. Click a dot for details, or an area to filter the list.`
                 : 'Run a search and every advertiser appears here, sized by how well its ads perform.'}
           </p>
         </div>
@@ -201,16 +211,12 @@ export function CityMap({ city, companies, scanning, revealKey, activeArea, onOp
           {/* Area labels: orientation before a search, counts after */}
           <g className="area-labels">
             {!hasResults &&
-              orientationFor(city).map((a) => {
-                const [la, ln] = coordsIn(city, a)!;
-                const p = px(la, ln);
-                return (
-                  <g key={a} aria-hidden>
-                    <circle cx={p.x} cy={p.y} r="2.5" className="area-dot" />
-                    <text x={p.x + 6} y={p.y + 4}>{a}</text>
-                  </g>
-                );
-              })}
+              orientationLabels.map(({ key: a, x, y, anchor, px: dx, py: dy }) => (
+                <g key={a} aria-hidden>
+                  <circle cx={dx} cy={dy} r="2.5" className="area-dot" />
+                  <text x={x} y={y} textAnchor={anchor}>{a}</text>
+                </g>
+              ))}
             {hasResults &&
               resultLabels.map(({ key: a, x, y, anchor }) => {
                 const n = counts.get(a) ?? 0;
