@@ -11,19 +11,29 @@ import {
   MessageBarTitle,
   ProgressBar,
   Spinner,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Input,
+  Field,
 } from '@fluentui/react-components';
-import { Play20Filled, Sparkle20Regular, Checkmark12Filled, Dismiss24Regular } from '@fluentui/react-icons';
+import { Play20Filled, Sparkle20Regular, Checkmark12Filled, Dismiss24Regular, LockClosed20Regular } from '@fluentui/react-icons';
 import { CATEGORIES } from '@/lib/categories';
-import { STEP_LABELS } from './useScan';
+import { STEP_LABELS, savedLivePassword, saveLivePassword } from './useScan';
 import { CityPicker } from './CityPicker';
 
 interface Props {
   liveReady: boolean | null;
+  /** Live search needs a password (sample data never does) */
+  locked: boolean;
   running: boolean;
   step: number;
   detail: string;
   error: string | null;
-  onLive: (categories: string[], limit: number) => void;
+  onLive: (categories: string[], limit: number, password: string) => void;
   onDemo: () => void;
   onCancel: () => void;
   onDismissError: () => void;
@@ -37,7 +47,24 @@ const LIMITS = [
 
 export function ScanPanel(p: Props) {
   const [picked, setPicked] = React.useState<string[]>([]);
-  const [limit, setLimit] = React.useState(300);
+  const [limit, setLimit] = React.useState(150);
+  const [askPass, setAskPass] = React.useState(false);
+  const [pass, setPass] = React.useState('');
+
+  const startLive = () => {
+    if (!p.locked) return p.onLive(picked, limit, '');
+    const saved = savedLivePassword();
+    if (saved) return p.onLive(picked, limit, saved);
+    setAskPass(true);
+  };
+  const submitPass = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!pass.trim()) return;
+    saveLivePassword(pass.trim());
+    setAskPass(false);
+    p.onLive(picked, limit, pass.trim());
+    setPass('');
+  };
 
   const toggle = (id: string) => setPicked((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
   const all = picked.length === 0;
@@ -85,9 +112,9 @@ export function ScanPanel(p: Props) {
             <Button
               appearance="primary"
               size="large"
-              icon={<Play20Filled />}
+              icon={p.locked ? <LockClosed20Regular /> : <Play20Filled />}
               disabled={p.liveReady === false}
-              onClick={() => p.onLive(picked, limit)}
+              onClick={startLive}
             >
               Find companies
             </Button>
@@ -97,6 +124,34 @@ export function ScanPanel(p: Props) {
           </>
         )}
       </div>
+
+      {p.locked && p.liveReady && !p.running && (
+        <p className="sub" style={{ margin: '12px 0 0', fontSize: 13 }}>
+          Live search uses real Meta ads and needs a password. Anyone can try it with sample data.
+        </p>
+      )}
+
+      <Dialog open={askPass} onOpenChange={(_, d) => setAskPass(d.open)}>
+        <DialogSurface style={{ maxWidth: 420 }}>
+          <form onSubmit={submitPass}>
+            <DialogBody>
+              <DialogTitle>Enter the live search password</DialogTitle>
+              <DialogContent>
+                <p style={{ marginTop: 0, color: 'var(--colorNeutralForeground3)', fontSize: 14 }}>
+                  Live searches read real ads and use the owner’s credit. Don’t have the password? Use “Show sample data”.
+                </p>
+                <Field label="Password">
+                  <Input type="password" value={pass} onChange={(_, d) => setPass(d.value)} autoFocus />
+                </Field>
+              </DialogContent>
+              <DialogActions>
+                <Button appearance="secondary" type="button" onClick={() => setAskPass(false)}>Cancel</Button>
+                <Button appearance="primary" type="submit" disabled={!pass.trim()}>Start search</Button>
+              </DialogActions>
+            </DialogBody>
+          </form>
+        </DialogSurface>
+      </Dialog>
 
       {p.liveReady === false && !p.running && (
         <MessageBar layout="multiline" intent="info" style={{ marginTop: 16 }}>

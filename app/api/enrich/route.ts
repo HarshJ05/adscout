@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { denyWithoutLivePassword } from '@/lib/liveAuth';
 import { extractContacts, emptyContacts } from '@/lib/contacts';
 import type { Contacts } from '@/lib/types';
 
@@ -61,6 +62,8 @@ const decodeLinks = (html: string) =>
     .replace(/<[^>]+>/g, ' ');
 
 export async function POST(req: Request) {
+  const denied = denyWithoutLivePassword(req);
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const items: { id: string; website: string }[] = Array.isArray(body.items) ? body.items.slice(0, 6) : [];
   const results = await Promise.all(

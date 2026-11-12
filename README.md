@@ -55,7 +55,8 @@ Without `APIFY_TOKEN` the app runs in **Demo mode**: open the dashboard and pres
 | --- | --- | --- |
 | `APIFY_TOKEN` | For live data | Apify API token ([get one](https://console.apify.com/settings/integrations)) |
 | `APIFY_ACTOR_ID` | No | Scraper to use. Default `apify~facebook-ads-scraper` |
-| `SITE_PASSWORD` | No | Locks the whole site behind a password. Recommended once deployed |
+| `LIVE_SEARCH_PASSWORD` | Recommended | Password for live searches (they spend your Apify credit). Sample data stays open to everyone |
+| `SITE_PASSWORD` | No | Locks the whole site behind a password |
 | `NEXT_PUBLIC_SITE_URL` | No | Public URL for link previews (Vercel sets one automatically) |
 
 ## Scripts

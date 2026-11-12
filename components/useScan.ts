@@ -20,8 +20,34 @@ export const STEP_LABELS = [
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** The live-search password is kept for this browser tab only. */
+const PASS_KEY = 'adscout:live-pass';
+export const savedLivePassword = () => {
+  try {
+    return sessionStorage.getItem(PASS_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
+export const saveLivePassword = (p: string) => {
+  try {
+    sessionStorage.setItem(PASS_KEY, p);
+  } catch {
+    /* private mode: ask again next time */
+  }
+};
+const clearLivePassword = () => {
+  try {
+    sessionStorage.removeItem(PASS_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
 export function useScan() {
   const [liveReady, setLiveReady] = React.useState<boolean | null>(null);
+  const [locked, setLocked] = React.useState(false);
+  const passRef = React.useRef('');
   const result = useLocalStore(resultStore);
   const setResult = (r: ScanResult | null) => resultStore.set(r);
   const [running, setRunning] = React.useState(false);
@@ -33,7 +59,10 @@ export function useScan() {
   React.useEffect(() => {
     fetch('/api/config')
       .then((r) => r.json())
-      .then((j) => setLiveReady(Boolean(j.live)))
+      .then((j) => {
+        setLiveReady(Boolean(j.live));
+        setLocked(Boolean(j.locked));
+      })
       .catch(() => setLiveReady(false));
   }, []);
 
@@ -78,7 +107,7 @@ export function useScan() {
       try {
         const res = await fetch('/api/enrich', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-live-password': passRef.current },
           body: JSON.stringify({ items: batch.map((c) => ({ id: c.id, website: c.contacts.websites[0] })) }),
         });
         const json = await res.json();
@@ -97,7 +126,9 @@ export function useScan() {
     return list;
   };
 
-  const runLive = React.useCallback(async (categories: string[], limit: number, cityId: string) => {
+  const runLive = React.useCallback(async (categories: string[], limit: number, cityId: string, password = '') => {
+    passRef.current = password;
+    const auth = { 'x-live-password': password };
     const city = cityById(cityId);
     cancelRef.current = false;
     setError(null);
@@ -107,9 +138,13 @@ export function useScan() {
     try {
       const start = await fetch('/api/scan/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ categories, limit, city: city.id }),
       }).then((r) => r.json());
+      if (start.error === 'PASSWORD') {
+        clearLivePassword();
+        throw new Error('That password is not correct. Sample data works without one.');
+      }
       if (start.error) throw new Error(start.message || start.error);
 
       const began = Date.now();
@@ -117,7 +152,7 @@ export function useScan() {
       while (!['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED'].includes(status)) {
         await sleep(5000);
         if (cancelRef.current) return;
-        const s = await fetch(`/api/scan/status?runId=${encodeURIComponent(start.runId)}`).then((r) => r.json());
+        const s = await fetch(`/api/scan/status?runId=${encodeURIComponent(start.runId)}`, { headers: auth }).then((r) => r.json());
         if (s.error) throw new Error(s.message || s.error);
         status = s.status;
         const secs = Math.round((Date.now() - began) / 1000);
@@ -128,7 +163,8 @@ export function useScan() {
       setStep(1);
       setDetail(`Reading the ads and checking for ${city.name} addresses, PIN codes and phone codes…`);
       const r: ScanResult & { error?: string; message?: string } = await fetch(
-        `/api/scan/results?datasetId=${encodeURIComponent(start.datasetId)}&city=${city.id}`
+        `/api/scan/results?datasetId=${encodeURIComponent(start.datasetId)}&city=${city.id}`,
+        { headers: auth }
       ).then((x) => x.json());
       if (r.error) throw new Error(r.message || r.error);
       if (status !== 'SUCCEEDED' && r.adsChecked === 0) throw new Error(`The scraper stopped (${status}) before finding any ads.`);
@@ -161,5 +197,5 @@ export function useScan() {
     setStep(-1);
   };
 
-  return { liveReady, result, running, step, detail, error, setError, runDemo, runLive, cancel, clear };
+  return { liveReady, locked, result, running, step, detail, error, setError, runDemo, runLive, cancel, clear };
 }

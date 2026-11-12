@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { denyWithoutLivePassword } from '@/lib/liveAuth';
 import { getDatasetItems } from '@/lib/apify';
 import { normalizeAd } from '@/lib/normalize';
 import { buildCompanies } from '@/lib/aggregate';
@@ -10,6 +11,8 @@ export const maxDuration = 60;
 
 /** Step 3: read the scraped ads, keep advertisers in the chosen city, rank them. */
 export async function GET(req: Request) {
+  const denied = denyWithoutLivePassword(req);
+  if (denied) return denied;
   const params = new URL(req.url).searchParams;
   const datasetId = params.get('datasetId');
   const city = cityById(params.get('city'));

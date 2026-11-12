@@ -61,13 +61,14 @@ export default function Dashboard() {
           </div>
           <ScanPanel
             liveReady={scan.liveReady}
+            locked={scan.locked}
             running={scan.running}
             step={scan.step}
             detail={scan.detail}
             error={scan.error}
-            onLive={(cats, limit) => {
+            onLive={(cats, limit, password) => {
               setArea(null);
-              scan.runLive(cats, limit, city.id);
+              scan.runLive(cats, limit, city.id, password);
             }}
             onDemo={() => {
               setArea(null);

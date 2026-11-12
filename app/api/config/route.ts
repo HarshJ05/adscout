@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { apifyToken } from '@/lib/apify';
+import { livePasswordRequired } from '@/lib/liveAuth';
 
 export const dynamic = 'force-dynamic';
 
 /** Tells the page whether live scanning is set up (an Apify token exists). */
 export async function GET() {
-  return NextResponse.json({ live: Boolean(apifyToken()) });
+  return NextResponse.json({ live: Boolean(apifyToken()), locked: livePasswordRequired() });
 }

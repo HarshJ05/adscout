@@ -393,3 +393,4 @@ a { color: var(--colorBrandForegroundLink); }
 }
 .report-map .map-card { position: static; background: #07100C; border-radius: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .report-map .map-legend { color: #C4D3CB; }
+.fui-DialogActions .fui-Button { white-space: nowrap; }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { denyWithoutLivePassword } from '@/lib/liveAuth';
 import { apifyToken, startAdLibraryRun } from '@/lib/apify';
 import { searchTermsFor } from '@/lib/categories';
 import { cityById } from '@/lib/cities';
@@ -8,6 +9,8 @@ export const maxDuration = 30;
 
 /** Step 1: start a Meta Ads Library scrape on Apify. Returns immediately with a run id. */
 export async function POST(req: Request) {
+  const denied = denyWithoutLivePassword(req);
+  if (denied) return denied;
   if (!apifyToken()) {
     return NextResponse.json({ error: 'NO_TOKEN', message: 'Live search is not set up yet. Add APIFY_TOKEN in Vercel settings.' }, { status: 400 });
   }
