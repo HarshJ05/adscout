@@ -14,7 +14,7 @@ async function fetchText(url: string, ms = 8000): Promise<string> {
     const res = await fetch(url, {
       signal: ctrl.signal,
       redirect: 'follow',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JaipurAdFinder/1.0)', Accept: 'text/html' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AdScout/1.0)', Accept: 'text/html' },
       cache: 'no-store',
     });
     if (!res.ok || !(res.headers.get('content-type') ?? '').includes('text/html')) return '';

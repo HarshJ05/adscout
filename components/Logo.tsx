@@ -1,4 +1,4 @@
-/** Brand mark: the nine-block grid Jaipur's walled city was planned on, with the central block highlighted. */
+/** Brand mark: a nine-block city grid with the centre block highlighted (a nod to Jaipur's planned walled city). */
 export function Logo({ size = 22 }: { size?: number }) {
   const cells = [0, 1, 2];
   return (
@@ -12,7 +12,7 @@ export function Logo({ size = 22 }: { size?: number }) {
             width="6"
             height="6"
             rx="1.2"
-            fill={r === 1 && c === 1 ? '#F7A8B8' : 'currentColor'}
+            fill={r === 1 && c === 1 ? '#5FF0B2' : 'currentColor'}
             opacity={r === 1 && c === 1 ? 1 : 0.92}
           />
         ))

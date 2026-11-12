@@ -30,9 +30,10 @@ import {
   ChevronRight16Regular,
 } from '@fluentui/react-icons';
 import type { Company, ScanResult } from '@/lib/types';
+import { cityById } from '@/lib/cities';
 import { contactCount } from '@/lib/contacts';
 import { companiesToCsv } from '@/lib/csv';
-import { ScoreBar, TierBadge, JaipurBadge, plural, tierFill } from './ui';
+import { ScoreBar, TierBadge, MatchBadge, plural, tierFill } from './ui';
 
 /* ---------- Count-up number: runs once when new results arrive ---------- */
 function CountUp({ value }: { value: number }) {
@@ -82,7 +83,7 @@ export function Kpis({ result }: { result: ScanResult }) {
   const activeAds = cs.reduce((s, c) => s + c.activeAds, 0);
   const top = cs.filter((c) => c.score >= 75).length;
   const tiles = [
-    { icon: <Building24Regular />, value: cs.length, label: 'Jaipur companies found' },
+    { icon: <Building24Regular />, value: cs.length, label: `${cityById(result.city).name} companies found` },
     { icon: <Megaphone24Regular />, value: activeAds, label: 'Active ads running' },
     { icon: <DataTrending24Regular />, value: top, label: 'Top performers (score 75+)' },
     { icon: <ContactCard24Regular />, value: withContact, label: 'Companies with phone or email' },
@@ -156,7 +157,7 @@ export function Insights({ companies, onPickArea }: { companies: Company[]; onPi
     <div className="insights" style={{ marginTop: 16 }}>
       <section className="surface">
         <h2>Advertisers by business type</h2>
-        <p className="sub">Which kinds of Jaipur businesses are advertising the most</p>
+        <p className="sub">Which kinds of local businesses are advertising the most</p>
         <div className="bar-list">
           {cats.map(([name, n]) => (
             <div className="bar-row" key={name}>
@@ -209,7 +210,7 @@ export function CompanyTable({
   const [q, setQ] = React.useState('');
   const [cat, setCat] = React.useState('all');
   const [onlyPhone, setOnlyPhone] = React.useState(false);
-  const [strictJaipur, setStrictJaipur] = React.useState(true);
+  const [strictLocal, setStrictJaipur] = React.useState(true);
   const [sort, setSort] = React.useState<SortKey>('score');
 
   const rankOf = React.useMemo(() => new Map(result.companies.map((c, i) => [c.id, i + 1])), [result.companies]);
@@ -223,7 +224,7 @@ export function CompanyTable({
         (!area || c.area === area) &&
         (cat === 'all' || c.category === cat) &&
         (!onlyPhone || c.contacts.phones.length > 0) &&
-        (!strictJaipur || c.jaipur.level !== 'Low')
+        (!strictLocal || c.geo.level !== 'Low')
     );
     const by: Record<SortKey, (a: Company, b: Company) => number> = {
       score: (a, b) => b.score - a.score,
@@ -232,7 +233,7 @@ export function CompanyTable({
       name: (a, b) => a.name.localeCompare(b.name),
     };
     return [...list].sort(by[sort]);
-  }, [result.companies, q, cat, onlyPhone, strictJaipur, sort, area]);
+  }, [result.companies, q, cat, onlyPhone, strictLocal, sort, area]);
 
   const download = () => {
     const blob = new Blob([companiesToCsv(rows)], { type: 'text/csv;charset=utf-8' });
@@ -282,15 +283,15 @@ export function CompanyTable({
             ))}
           </Dropdown>
           <Switch label="Has phone number" checked={onlyPhone} onChange={(_, d) => setOnlyPhone(d.checked)} />
-          <Tooltip content="Hide companies with only a weak Jaipur match" relationship="description">
-            <Switch label="Strong Jaipur match" checked={strictJaipur} onChange={(_, d) => setStrictJaipur(d.checked)} />
+          <Tooltip content="Hide companies with only a weak location match" relationship="description">
+            <Switch label="Strong location match" checked={strictLocal} onChange={(_, d) => setStrictJaipur(d.checked)} />
           </Tooltip>
           <Button icon={<ArrowDownload20Regular />} onClick={download} disabled={rows.length === 0}>
             Download Excel (CSV)
           </Button>
         </div>
         <div className="table-scroll">
-          <Table aria-label="Jaipur companies ranked by ad performance">
+          <Table aria-label="Local companies ranked by ad performance">
             <TableHeader>
               <TableRow>
                 <TableHeaderCell style={{ width: 56 }}>Rank</TableHeaderCell>
@@ -301,7 +302,7 @@ export function CompanyTable({
                 <TableHeaderCell style={{ width: 120 }}>Longest ad</TableHeaderCell>
                 <TableHeaderCell style={{ width: 140 }}>Platforms</TableHeaderCell>
                 <TableHeaderCell style={{ width: 110 }}>Contacts</TableHeaderCell>
-                <TableHeaderCell style={{ width: 100 }}>Jaipur match</TableHeaderCell>
+                <TableHeaderCell style={{ width: 110 }}>Location match</TableHeaderCell>
                 <TableHeaderCell style={{ width: 44 }} aria-label="Open" />
               </TableRow>
             </TableHeader>
@@ -344,7 +345,7 @@ export function CompanyTable({
                       <span className={c.contacts.websites.length ? 'on' : ''} title="Website"><Globe16Regular /></span>
                     </div>
                   </TableCell>
-                  <TableCell><JaipurBadge level={c.jaipur.level} /></TableCell>
+                  <TableCell><MatchBadge level={c.geo.level} /></TableCell>
                   <TableCell><ChevronRight16Regular /></TableCell>
                 </TableRow>
               ))}
@@ -354,7 +355,7 @@ export function CompanyTable({
         {rows.length === 0 && <div className="empty">No companies match these filters.</div>}
         <div className="table-foot">
           Showing {plural(rows.length, 'company', 'companies')} of {result.companies.length} ·{' '}
-          {plural(result.adsChecked, 'ad')} checked · {plural(result.rejected, 'advertiser')} outside Jaipur removed ·{' '}
+          {plural(result.adsChecked, 'ad')} checked · {plural(result.rejected, 'advertiser')} outside {cityById(result.city).name} removed ·{' '}
           {result.mode === 'demo' ? <Badge appearance="tint" color="warning">Sample data</Badge> : <Badge appearance="tint" color="success">Live data</Badge>}{' '}
           · Updated {new Date(result.scannedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
         </div>

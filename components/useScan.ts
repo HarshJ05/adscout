@@ -5,37 +5,25 @@ import type { Company, ScanResult } from '@/lib/types';
 import { demoResult } from '@/lib/demo';
 import { mergeContacts } from '@/lib/contacts';
 import { googleAdsUrlFor } from '@/lib/aggregate';
+import { useLocalStore } from '@/lib/store';
+import { resultStore, historyStore } from '@/lib/stores';
+import { addSnapshot, toSnapshot } from '@/lib/history';
+import { cityById } from '@/lib/cities';
 
 export type StepState = 'waiting' | 'active' | 'done';
 export const STEP_LABELS = [
   'Searching the Meta Ads Library',
-  'Checking which businesses are in Jaipur',
+  'Checking which businesses are local',
   'Ranking companies by ad performance',
   'Finding contact details',
 ] as const;
 
-const STORE_KEY = 'jaf:last-result:v1';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function load(): ScanResult | null {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    return raw ? (JSON.parse(raw) as ScanResult) : null;
-  } catch {
-    return null;
-  }
-}
-function save(r: ScanResult) {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(r));
-  } catch {
-    /* storage full or blocked — results still show on screen */
-  }
-}
 
 export function useScan() {
   const [liveReady, setLiveReady] = React.useState<boolean | null>(null);
-  const [result, setResult] = React.useState<ScanResult | null>(null);
+  const result = useLocalStore(resultStore);
+  const setResult = (r: ScanResult | null) => resultStore.set(r);
   const [running, setRunning] = React.useState(false);
   const [step, setStep] = React.useState(-1); // index of the active step, 4 = finished
   const [detail, setDetail] = React.useState('');
@@ -43,31 +31,29 @@ export function useScan() {
   const cancelRef = React.useRef(false);
 
   React.useEffect(() => {
-    // Saved results live in the browser only, so they can be read after the first render (keeps SSR and client in sync).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setResult(load());
     fetch('/api/config')
       .then((r) => r.json())
       .then((j) => setLiveReady(Boolean(j.live)))
       .catch(() => setLiveReady(false));
   }, []);
 
-  const finish = (r: ScanResult) => {
-    setResult(r);
-    save(r);
+  const finish = React.useCallback((r: ScanResult) => {
+    resultStore.set(r);
+    historyStore.set((h) => addSnapshot(h, toSnapshot(r)));
     setStep(4);
     setRunning(false);
     setDetail('');
-  };
+  }, []);
 
-  const runDemo = React.useCallback(async () => {
+  const runDemo = React.useCallback(async (cityId: string) => {
+    const city = cityById(cityId);
     cancelRef.current = false;
     setError(null);
     setRunning(true);
-    const r = demoResult();
+    const r = demoResult(new Date(), city);
     const labels = [
       `Reading ${r.adsChecked} sample ads…`,
-      `${r.companies.length} Jaipur businesses confirmed, ${r.rejected} outside Jaipur removed`,
+      `${r.companies.length} ${city.name} businesses confirmed, ${r.rejected} from elsewhere removed`,
       'Scoring active ads, ad age, platforms and new ads…',
       'Collecting phone numbers, emails and websites…',
     ];
@@ -78,7 +64,7 @@ export function useScan() {
       if (cancelRef.current) return;
     }
     finish(r);
-  }, []);
+  }, [finish]);
 
   const enrich = async (companies: Company[], onUpdate: (c: Company[]) => void) => {
     const targets = companies
@@ -111,7 +97,8 @@ export function useScan() {
     return list;
   };
 
-  const runLive = React.useCallback(async (categories: string[], limit: number) => {
+  const runLive = React.useCallback(async (categories: string[], limit: number, cityId: string) => {
+    const city = cityById(cityId);
     cancelRef.current = false;
     setError(null);
     setRunning(true);
@@ -121,7 +108,7 @@ export function useScan() {
       const start = await fetch('/api/scan/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories, limit }),
+        body: JSON.stringify({ categories, limit, city: city.id }),
       }).then((r) => r.json());
       if (start.error) throw new Error(start.message || start.error);
 
@@ -139,15 +126,15 @@ export function useScan() {
       }
       // A stopped run may still have collected ads — use them.
       setStep(1);
-      setDetail('Reading the ads and checking for Jaipur addresses, PIN codes and phone codes…');
+      setDetail(`Reading the ads and checking for ${city.name} addresses, PIN codes and phone codes…`);
       const r: ScanResult & { error?: string; message?: string } = await fetch(
-        `/api/scan/results?datasetId=${encodeURIComponent(start.datasetId)}`
+        `/api/scan/results?datasetId=${encodeURIComponent(start.datasetId)}&city=${city.id}`
       ).then((x) => x.json());
       if (r.error) throw new Error(r.message || r.error);
       if (status !== 'SUCCEEDED' && r.adsChecked === 0) throw new Error(`The scraper stopped (${status}) before finding any ads.`);
 
       setStep(2);
-      setDetail(`${r.companies.length} Jaipur businesses found. Ranking them…`);
+      setDetail(`${r.companies.length} ${city.name} businesses found. Ranking them…`);
       await sleep(600);
 
       setStep(3);
@@ -160,7 +147,7 @@ export function useScan() {
       setRunning(false);
       setStep(-1);
     }
-  }, []);
+  }, [finish]);
 
   const cancel = () => {
     cancelRef.current = true;
@@ -170,11 +157,6 @@ export function useScan() {
   };
 
   const clear = () => {
-    try {
-      localStorage.removeItem(STORE_KEY);
-    } catch {
-      /* ignore */
-    }
     setResult(null);
     setStep(-1);
   };

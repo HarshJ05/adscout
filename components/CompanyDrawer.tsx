@@ -30,7 +30,8 @@ import {
 } from '@fluentui/react-icons';
 import type { Company } from '@/lib/types';
 import { WEIGHTS } from '@/lib/scoring';
-import { TierBadge, JaipurBadge, waLink, plural } from './ui';
+import { TierBadge, MatchBadge, waLink, plural } from './ui';
+import { LeadControl } from './LeadControl';
 
 export function CompanyDrawer({ company, onClose, isDemo }: { company: Company | null; onClose: () => void; isDemo: boolean }) {
   const toasterId = useId('toaster');
@@ -125,6 +126,10 @@ export function CompanyDrawer({ company, onClose, isDemo }: { company: Company |
               </div>
 
               <div className="drawer-section">
+                <LeadControl company={c} sample={isDemo} />
+              </div>
+
+              <div className="drawer-section">
                 <h3>Open elsewhere</h3>
                 <div className="link-grid">
                   <Button as="a" href={c.metaLibraryUrl} target="_blank" rel="noreferrer" icon={<Open16Regular />}>All ads in Meta Ads Library</Button>
@@ -152,9 +157,9 @@ export function CompanyDrawer({ company, onClose, isDemo }: { company: Company |
               </div>
 
               <div className="drawer-section">
-                <h3 style={{ display: 'flex', gap: 8, alignItems: 'center' }}>Why we think it’s in Jaipur <JaipurBadge level={c.jaipur.level} /></h3>
+                <h3 style={{ display: 'flex', gap: 8, alignItems: 'center' }}>Why we think it’s local <MatchBadge level={c.geo.level} /></h3>
                 <ul className="signal-list">
-                  {c.jaipur.signals.map((s) => (
+                  {c.geo.signals.map((s) => (
                     <li key={s}>{s}</li>
                   ))}
                 </ul>

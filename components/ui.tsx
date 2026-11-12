@@ -1,13 +1,14 @@
 'use client';
 
 import { Badge } from '@fluentui/react-components';
-import type { Tier, JaipurLevel } from '@/lib/types';
+import type { Tier, GeoLevel } from '@/lib/types';
+import { TIER_FILL } from '@/lib/theme';
 
 export const tierColor = (t: Tier) =>
-  t === 'Top performer' ? 'success' : t === 'Strong' ? 'brand' : t === 'Moderate' ? 'informative' : 'subtle';
+  t === 'Top performer' ? 'success' : t === 'Strong' ? 'brand' : t === 'Moderate' ? 'warning' : 'subtle';
 
 export const tierFill = (score: number) =>
-  score >= 75 ? 'var(--colorPaletteGreenBackground3)' : score >= 50 ? 'var(--colorBrandBackground)' : score >= 25 ? 'var(--colorPaletteMarigoldBackground3)' : 'var(--colorNeutralStroke1)';
+  score >= 75 ? TIER_FILL.top : score >= 50 ? TIER_FILL.strong : score >= 25 ? TIER_FILL.moderate : TIER_FILL.starting;
 
 export function TierBadge({ tier }: { tier: Tier }) {
   return (
@@ -17,7 +18,7 @@ export function TierBadge({ tier }: { tier: Tier }) {
   );
 }
 
-export function JaipurBadge({ level }: { level: JaipurLevel }) {
+export function MatchBadge({ level }: { level: GeoLevel }) {
   const color = level === 'High' ? 'success' : level === 'Medium' ? 'warning' : 'subtle';
   return (
     <Badge appearance="outline" color={color as any} shape="rounded">

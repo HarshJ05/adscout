@@ -2,30 +2,32 @@
 
 import * as React from 'react';
 import type { Company } from '@/lib/types';
-import { coordsFor, CITY_CENTRE } from '@/lib/areas';
+import { coordsIn, type City } from '@/lib/cities';
 import { tierFill } from './ui';
 
-/* Schematic map of Jaipur. Advertisers are drawn on the area their ads name,
+/* Schematic map of the chosen city. Advertisers are drawn on the area their ads name,
  * sized by Performance Score. Positions are approximate on purpose. */
 
 const W = 560;
-const H = 600;
 const PAD = 18;
-const LAT_N = 26.995;
-const LAT_S = 26.775;
-const LNG_W = 75.69;
-const LNG_E = 75.9;
-
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-const px = (lat: number, lng: number) => ({
-  x: clamp(PAD + ((lng - LNG_W) / (LNG_E - LNG_W)) * (W - PAD * 2), PAD, W - PAD),
-  y: clamp(PAD + ((LAT_N - lat) / (LAT_N - LAT_S)) * (H - PAD * 2), PAD, H - PAD),
-});
+
+/** Equirectangular projection fitted to the city's bounds; the frame height follows the city's shape. */
+function projection(city: City) {
+  const { n, s, w, e } = city.bounds;
+  const k = Math.cos(((n + s) / 2) * (Math.PI / 180));
+  const H = Math.round(clamp(W * ((n - s) / ((e - w) * k)), 420, 680));
+  const px = (lat: number, lng: number) => ({
+    x: clamp(PAD + ((lng - w) / (e - w)) * (W - PAD * 2), PAD, W - PAD),
+    y: clamp(PAD + ((n - lat) / (n - s)) * (H - PAD * 2), PAD, H - PAD),
+  });
+  return { H, px };
+}
 
 /** Place labels without overlaps: try four spots around each point, skip a label if none is free. */
 type Box = { x: number; y: number; w: number; h: number };
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-function placeLabels(items: { key: string; x: number; y: number; r: number; text: string }[], blocked: Box[] = []) {
+function placeLabels(items: { key: string; x: number; y: number; r: number; text: string }[], blocked: Box[], H: number) {
   const placed: Box[] = [...blocked];
   const out: { key: string; x: number; y: number; anchor: 'start' | 'end' | 'middle' }[] = [];
   for (const it of items) {
@@ -56,7 +58,9 @@ const ROADS: { name: string; pts: [number, number][]; label: [number, number] }[
 ];
 
 /** Areas labelled before any search, so the map is readable on its own. */
-const ORIENTATION = ['Vaishali Nagar', 'Mansarovar', 'Malviya Nagar', 'Jagatpura', 'Sanganer', 'Vidhyadhar Nagar', 'Jhotwara', 'C-Scheme', 'Raja Park', 'Amer Road'];
+const JAIPUR_ORIENTATION = ['Vaishali Nagar', 'Mansarovar', 'Malviya Nagar', 'Jagatpura', 'Sanganer', 'Vidhyadhar Nagar', 'Jhotwara', 'C-Scheme', 'Raja Park', 'Amer Road'];
+const orientationFor = (city: City) =>
+  city.landmarks === 'jaipur' ? JAIPUR_ORIENTATION : Object.keys(city.areas).filter((_, i) => i % 2 === 0).slice(0, 10);
 
 const hash = (s: string) => {
   let h = 2166136261;
@@ -65,6 +69,7 @@ const hash = (s: string) => {
 };
 
 interface Props {
+  city: City;
   companies: Company[];
   scanning: boolean;
   revealKey: string;
@@ -73,8 +78,10 @@ interface Props {
   onPickArea: (area: string | null) => void;
 }
 
-export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, onPickArea }: Props) {
+export function CityMap({ city, companies, scanning, revealKey, activeArea, onOpen, onPickArea }: Props) {
   const [hover, setHover] = React.useState<Company | null>(null);
+  const { H, px } = React.useMemo(() => projection(city), [city]);
+  const isJaipur = city.landmarks === 'jaipur';
 
   // Place each company on its area, spreading companies in the same area on a small spiral.
   const dots = React.useMemo(() => {
@@ -83,46 +90,50 @@ export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, 
       const key = c.area ?? '__city';
       const n = perArea.get(key) ?? 0;
       perArea.set(key, n + 1);
-      const [lat, lng] = coordsFor(c.area) ?? CITY_CENTRE;
+      const [lat, lng] = coordsIn(city, c.area) ?? city.center;
       const base = px(lat, lng);
       const angle = hash(c.id) * Math.PI * 2 + n * 2.4;
       const dist = n === 0 ? 0 : 10 + n * 6;
       return { c, rank, x: base.x + Math.cos(angle) * dist, y: base.y + Math.sin(angle) * dist, r: 5 + c.score / 12 };
     });
-  }, [companies]);
+  }, [companies, city, px]);
 
   const areas = React.useMemo(() => {
     const m = new Map<string, number>();
-    companies.forEach((c) => c.area && coordsFor(c.area) && m.set(c.area, (m.get(c.area) ?? 0) + 1));
+    companies.forEach((c) => c.area && coordsIn(city, c.area) && m.set(c.area, (m.get(c.area) ?? 0) + 1));
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
-  }, [companies]);
+  }, [companies, city]);
 
   const hasResults = companies.length > 0;
 
   const resultLabels = React.useMemo(() => {
     const items = areas.slice(0, 10).map(([a, n]) => {
-      const p = px(...coordsFor(a)!);
+      const p = px(...coordsIn(city, a)!);
       const r = Math.max(6, ...dots.filter((d) => d.c.area === a && Math.hypot(d.x - p.x, d.y - p.y) < 2).map((d) => d.r));
       return { key: a, x: p.x, y: p.y, r, text: `${a} ${n}` };
     });
-    // Keep labels off the walled city block.
-    const a = px(26.933, 75.808);
-    const b = px(26.913, 75.838);
     const dotBoxes = dots.map((d) => ({ x: d.x - d.r, y: d.y - d.r, w: d.r * 2, h: d.r * 2 }));
-    return placeLabels(items, [{ x: a.x, y: a.y - 18, w: b.x - a.x, h: b.y - a.y + 18 }, ...dotBoxes]);
-  }, [areas, dots]);
+    const blocked = [...dotBoxes];
+    if (isJaipur) {
+      // Keep labels off the walled city block.
+      const a = px(26.933, 75.808);
+      const b = px(26.913, 75.838);
+      blocked.push({ x: a.x, y: a.y - 18, w: b.x - a.x, h: b.y - a.y + 18 });
+    }
+    return placeLabels(items, blocked, H);
+  }, [areas, dots, city, px, H, isJaipur]);
   const counts = new Map(areas);
-  const centre = px(...CITY_CENTRE);
+  const centre = px(...city.center);
   const wc1 = px(26.933, 75.808);
   const wc2 = px(26.913, 75.838);
   const wcW = wc2.x - wc1.x;
   const wcH = wc2.y - wc1.y;
 
   return (
-    <figure className="map-card" aria-label="Map of Jaipur advertisers">
+    <figure className="map-card" aria-label={`Map of ${city.name} advertisers`}>
       <figcaption className="map-head">
         <div>
-          <h2>Where Jaipur’s advertisers are</h2>
+          <h2>Where {city.name}’s advertisers are</h2>
           <p>
             {scanning
               ? 'Searching the Meta Ads Library…'
@@ -148,13 +159,14 @@ export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, 
             </radialGradient>
           </defs>
 
-          {/* Rings every ~5 km from the walled city, for a sense of distance */}
+          {/* Rings around the city centre, for a sense of distance */}
           <g className="map-rings" aria-hidden>
             {[90, 180, 270].map((r) => (
               <circle key={r} cx={centre.x} cy={centre.y} r={r} />
             ))}
           </g>
 
+          {isJaipur && (
           <g className="map-roads" aria-hidden>
             {ROADS.map((rd) => (
               <g key={rd.name}>
@@ -163,8 +175,10 @@ export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, 
               </g>
             ))}
           </g>
+          )}
 
           {/* The walled city: Jaipur was planned on a nine-block grid */}
+          {isJaipur && (
           <g className="walled-city" aria-hidden>
             <rect x={wc1.x} y={wc1.y} width={wcW} height={wcH} rx="3" />
             {[1, 2].map((i) => (
@@ -175,6 +189,7 @@ export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, 
             ))}
             <text x={wc1.x + wcW / 2} y={wc1.y - 7} textAnchor="middle">Walled city</text>
           </g>
+          )}
 
           {scanning && (
             <g className="sweep" style={{ transformOrigin: `${centre.x}px ${centre.y}px` }} aria-hidden>
@@ -186,8 +201,8 @@ export function JaipurMap({ companies, scanning, revealKey, activeArea, onOpen, 
           {/* Area labels: orientation before a search, counts after */}
           <g className="area-labels">
             {!hasResults &&
-              ORIENTATION.map((a) => {
-                const [la, ln] = coordsFor(a)!;
+              orientationFor(city).map((a) => {
+                const [la, ln] = coordsIn(city, a)!;
                 const p = px(la, ln);
                 return (
                   <g key={a} aria-hidden>

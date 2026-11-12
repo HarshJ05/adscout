@@ -1,54 +1,53 @@
-# Jaipur Ad Finder
+# AdScout
 
-**Find Jaipur businesses that advertise on Facebook & Instagram, see who does it best, and get their contact details — in one click.**
+**Find the local businesses that advertise on Facebook and Instagram in your city, see who is doing it best, and reach them.**
 
 ![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react)
-![Fluent UI](https://img.shields.io/badge/Microsoft-Fluent%20UI%209-0f6cbd)
+![Three.js](https://img.shields.io/badge/Three.js-WebGL-000?logo=three.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript)
+
+![Landing page](docs/landing.png)
 
 ![Dashboard](docs/dashboard.png)
 
 ## Features
 
-- **Live map of Jaipur** — every advertiser plotted on its area, sized by score; a radar sweep while searching; click an area to filter
-- **Search the Meta Ads Library** for Jaipur advertisers by business type (real estate, coaching, clinics, cafés, jewellery…)
-- **Jaipur-only filter** — every advertiser is verified by city name, local areas, 302xxx PIN codes and the 0141 phone code
-- **Performance Score (0–100)** from public ad signals: live ads, ad lifespan, platforms and new ads
-- **Contact details** — phone, WhatsApp, email, website, Instagram and address, with one-click Call / Chat / Email buttons
-- **Leaderboard** with search, filters, sorting and **Excel (CSV) export**
-- **Microsoft Fluent design**, light & dark mode, fully responsive on mobile
-- **Demo mode** with clearly fictional sample data, so it can be presented without an API key
-- **Production-ready**: tests, lint, type checks, CI on every push, security headers, optional password lock
-
-| Dark mode with area filter | Top performers and busiest areas |
-| --- | --- |
-| ![Dark mode](docs/dark-mode.png) | ![Top performers](docs/company-details.png) |
+- **7 cities:** Jaipur, Delhi, Mumbai, Bengaluru, Pune, Hyderabad and Ahmedabad, with 180 mapped neighbourhoods
+- **Location check:** every advertiser is verified by city name (any spelling or script), PIN code, STD landline code and local area
+- **Ad-activity score (0–100)** from public signals: live ads, ad lifespan, platforms, new ads this month
+- **Live city map:** advertisers plotted on their neighbourhood, sized by score; click an area to filter
+- **Contact details:** phone, WhatsApp, email, website, Instagram and address, with one-click actions
+- **Lead tracker:** save companies, track status (To contact → Contacted → Interested → Won), notes, WhatsApp/email message templates, CSV export
+- **Ad gallery:** every ad found, filterable by business type and platform
+- **History and trends:** each search is saved per city; see who started or stopped advertising and whose score moved
+- **Client report:** print-ready PDF with the map, top 10, charts and contacts
+- **3D landing page:** real-time Three.js sphere field that follows the scroll, with automatic quality scaling
+- **Production-ready:** 27 unit tests, lint and strict types in CI, security headers, optional password lock
 
 ## Tech stack
 
 | Layer | Technology |
 | --- | --- |
-| Framework | [Next.js 16](https://nextjs.org) (App Router) · React 19 · TypeScript |
-| UI | [Microsoft Fluent UI v9](https://react.fluentui.dev) + Fluent icons |
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| UI | Microsoft Fluent UI v9 with a custom black + emerald theme, Bricolage Grotesque and Manrope fonts |
+| 3D | Three.js (MeshPhysicalMaterial, custom physics) |
 | Data | [Apify Facebook Ads Scraper](https://apify.com/apify/facebook-ads-scraper) reading the public [Meta Ads Library](https://www.facebook.com/ads/library/) |
-| Hosting | [Vercel](https://vercel.com) |
-| Quality | ESLint · TypeScript strict · Node test runner · GitHub Actions |
+| Hosting | Vercel |
+| Quality | ESLint, TypeScript strict, Node test runner, GitHub Actions |
 
 ## Getting started
 
-**Requirements:** Node.js 20.9 or newer (22 recommended).
+Requires Node.js 20.9 or newer (22 recommended).
 
 ```bash
-git clone https://github.com/OWNER/REPO.git
-cd REPO
 npm install
 cp .env.example .env.local   # Windows: copy .env.example .env.local
 npm run dev                  # http://localhost:3000
 ```
 
-Without `APIFY_TOKEN` the app runs in **Demo mode** — press **Show sample data**.
+Without `APIFY_TOKEN` the app runs in **Demo mode**: open the dashboard and press **Show sample data** (fictional businesses, any city).
 
 ## Environment variables
 
@@ -56,59 +55,39 @@ Without `APIFY_TOKEN` the app runs in **Demo mode** — press **Show sample data
 | --- | --- | --- |
 | `APIFY_TOKEN` | For live data | Apify API token ([get one](https://console.apify.com/settings/integrations)) |
 | `APIFY_ACTOR_ID` | No | Scraper to use. Default `apify~facebook-ads-scraper` |
-| `SITE_PASSWORD` | No | Locks the whole site behind a password (any username). Recommended once deployed, so strangers can't use your Apify credits |
+| `SITE_PASSWORD` | No | Locks the whole site behind a password. Recommended once deployed |
 | `NEXT_PUBLIC_SITE_URL` | No | Public URL for link previews (Vercel sets one automatically) |
-
-Never commit `.env.local` — it is already in `.gitignore`.
 
 ## Scripts
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Start the development server |
+| `npm run dev` | Development server |
 | `npm run build` / `npm start` | Production build / run it |
-| `npm run lint` | ESLint (Next.js + TypeScript rules) |
-| `npm run typecheck` | TypeScript strict check |
-| `npm test` | Unit tests for Jaipur detection, contacts, scoring and the data pipeline |
-| `npm run check` | All of the above — run before every push |
+| `npm run check` | Lint, type check, tests and build: run before every push |
 
 ## Deploy to Vercel
 
 1. Push this repository to GitHub.
-2. On [vercel.com/new](https://vercel.com/new), import the repository (defaults are fine).
-3. Add `APIFY_TOKEN` (and ideally `SITE_PASSWORD`) under **Settings → Environment Variables**.
-4. Deploy. Every push to `main` redeploys automatically; pull requests get preview links.
+2. On [vercel.com/new](https://vercel.com/new), import it (defaults are fine).
+3. Add `APIFY_TOKEN` and `SITE_PASSWORD` under **Settings → Environment Variables**.
+4. Deploy. Every push to `main` redeploys automatically.
 
-## How it works
+## Adding a city
 
-```
-Find companies ─▶ /api/scan/start ─▶ Apify scrapes Meta Ads Library (1–4 min)
-                  /api/scan/status ◀─ page checks every 5 s
-                  /api/scan/results ─▶ clean ▸ group by advertiser ▸ Jaipur check ▸ score ▸ rank
-                  /api/enrich ─▶ visit company websites for phone / email / WhatsApp
-```
-
-**Performance Score** = Active ads (35) + Ad lifespan (30) + Platforms (15) + New ads in 30 days (20).
-Meta doesn't publish spend for ordinary business ads in India, so the score is an estimate from public signals.
-Full details are on the in-app **How it works** page.
+Add an entry to `lib/cities.ts`: name and aliases, PIN prefixes, STD code, map bounds and approximate area coordinates. Everything else (search terms, location check, map, sample data) picks it up.
 
 ## Project structure
 
 ```
-app/
-  page.tsx                Dashboard
-  how-it-works/           Plain-language method page
-  api/                    config · scan/start · scan/status · scan/results · enrich
-  providers.tsx           Fluent UI + light/dark theme
-  opengraph-image.tsx     Link-preview image
-  error.tsx, not-found.tsx
-components/               ScanPanel, Results, CompanyDrawer, AppHeader, AppFooter, useScan
-lib/                      jaipur · scoring · contacts · normalize · aggregate · apify · categories · demo · csv
-tests/                    Unit tests (node:test)
-proxy.ts                  Optional password lock
-.github/workflows/ci.yml  Lint, typecheck, test and build on every push
+app/(site)/            Landing page with the 3D field
+app/(app)/             Dashboard, leads, ads, history, report, how it works
+app/api/               config · scan/start · scan/status · scan/results · enrich
+components/            UI (CityMap, LeadsView, AdGallery, HistoryView, ReportView, landing/…)
+lib/                   cities · geo · scoring · contacts · normalize · aggregate · apify · leads · history · demo
+tests/                 Unit tests (node:test)
 ```
 
-## Responsible use
+## Notes
 
-All ad data is public, from the Meta Ads Library. Review Meta's terms before commercial use, keep scraping volumes reasonable, and handle contact details in line with India's Digital Personal Data Protection (DPDP) Act.
+Leads and history are saved in each visitor's browser. Data comes from the public Meta Ads Library. Meta does not publish spend for ordinary business ads in India, so the score measures ad activity, not spend. Use contact details in line with India's DPDP Act.

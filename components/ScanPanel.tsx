@@ -15,6 +15,7 @@ import {
 import { Play20Filled, Sparkle20Regular, Checkmark12Filled, Dismiss24Regular } from '@fluentui/react-icons';
 import { CATEGORIES } from '@/lib/categories';
 import { STEP_LABELS } from './useScan';
+import { CityPicker } from './CityPicker';
 
 interface Props {
   liveReady: boolean | null;
@@ -43,6 +44,9 @@ export function ScanPanel(p: Props) {
 
   return (
     <section className="surface scan-card" aria-label="Search settings">
+      <span className="field-label" id="city-label">City</span>
+      <div style={{ marginBottom: 18 }}><CityPicker disabled={p.running} /></div>
+
       <span className="field-label">Which businesses?</span>
       <div className="chip-row" role="group" aria-label="Business types">
         <ToggleButton shape="circular" checked={all} onClick={() => setPicked([])} disabled={p.running}>

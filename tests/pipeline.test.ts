@@ -45,10 +45,10 @@ test('demo data runs through the same pipeline and stays fictional', () => {
   }
 });
 
-test('every sample company is placed on a known Jaipur area', async () => {
-  const { coordsFor } = await import('../lib/areas');
+test('every sample company is placed on a known area of its city', async () => {
+  const { coordsIn, cityById } = await import('../lib/cities');
   for (const c of demoResult(today).companies) {
     assert.ok(c.area, `${c.name} has an area`);
-    assert.ok(coordsFor(c.area), `${c.area} has map coordinates`);
+    assert.ok(coordsIn(cityById('jaipur'), c.area), `${c.area} has map coordinates`);
   }
 });

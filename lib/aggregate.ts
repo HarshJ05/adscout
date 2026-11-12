@@ -1,9 +1,9 @@
 import type { Ad, Company, ScanResult } from './types';
-import { checkJaipur } from './jaipur';
+import { checkCity, areaFromSignals } from './geo';
+import { DEFAULT_CITY, type City } from './cities';
 import { extractContacts, emptyContacts, websiteOf, unwrapFacebookLink } from './contacts';
 import { scoreCompany } from './scoring';
 import { classify } from './categories';
-import { areaFromSignals } from './areas';
 
 export const metaLibraryUrlFor = (pageId: string) =>
   /^\d+$/.test(pageId)
@@ -21,8 +21,8 @@ export const googleAdsUrlFor = (website: string | null, name: string) => {
   return `https://adstransparency.google.com/?region=IN&query=${encodeURIComponent(name)}`;
 };
 
-/** Group ads by advertiser, check Jaipur, extract contacts and score each company. */
-export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new Date()): ScanResult {
+/** Group ads by advertiser, check the city, extract contacts and score each company. */
+export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new Date(), city: City = DEFAULT_CITY): ScanResult {
   const byPage = new Map<string, Ad[]>();
   const seen = new Set<string>();
   for (const ad of ads) {
@@ -43,8 +43,8 @@ export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new 
       ...list.map((a) => [a.text, a.title ?? '', a.linkUrl ?? '', a.aboutText].join('\n')),
     ].join('\n');
 
-    const jaipur = checkJaipur(allText);
-    if (jaipur.points === 0) {
+    const geo = checkCity(allText, city);
+    if (geo.points === 0) {
       rejected++;
       continue;
     }
@@ -67,8 +67,8 @@ export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new 
       pageUrl: first.pageUrl,
       avatarUrl: first.avatarUrl,
       category: classify(allText, first.pageCategories),
-      area: areaFromSignals(jaipur.signals),
-      jaipur,
+      area: areaFromSignals(geo.signals),
+      geo,
       ads: sorted,
       activeAds: s.activeAds,
       totalAds: list.length,
@@ -87,5 +87,5 @@ export function buildCompanies(ads: Ad[], mode: ScanResult['mode'], today = new 
   }
 
   companies.sort((a, b) => b.score - a.score || b.activeAds - a.activeAds);
-  return { mode, scannedAt: today.toISOString(), adsChecked: seen.size, companies, rejected };
+  return { mode, city: city.id, scannedAt: today.toISOString(), adsChecked: seen.size, companies, rejected };
 }

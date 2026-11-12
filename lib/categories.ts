@@ -1,6 +1,6 @@
 /**
  * Business types the user can pick. Each has the search words sent to the
- * Meta Ads Library (always combined with "Jaipur") and the keywords used to
+ * Meta Ads Library (always combined with the city name) and the keywords used to
  * label an advertiser with that type.
  */
 export interface Category {
@@ -86,11 +86,12 @@ export function classify(text: string, pageCategories: string[]): string {
   return best;
 }
 
-/** Search words for the Ad Library. Every search includes "jaipur". */
-export function searchTermsFor(categoryIds: string[]): string[] {
+/** Search words for the Ad Library. Every search includes the city name. */
+export function searchTermsFor(categoryIds: string[], cityName = 'Jaipur'): string[] {
+  const city = cityName.toLowerCase();
   const picked = CATEGORIES.filter((c) => categoryIds.includes(c.id));
-  if (picked.length === 0) return ['jaipur'];
+  if (picked.length === 0) return [city];
   const terms = new Set<string>();
-  for (const c of picked) for (const s of c.search) terms.add(`jaipur ${s}`);
+  for (const c of picked) for (const s of c.search) terms.add(`${city} ${s}`);
   return Array.from(terms);
 }

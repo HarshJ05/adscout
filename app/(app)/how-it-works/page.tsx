@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { WEIGHTS, CAPS } from '@/lib/scoring';
+import { CITIES, totalAreas } from '@/lib/cities';
 
-export const metadata = { title: 'How it works · Jaipur Ad Finder' };
+export const metadata = { title: 'How it works' };
 
 const STEPS = [
-  { n: 1, t: 'Search ads', d: 'We search the public Meta Ads Library (India, active ads) for words like “Jaipur property” or “Jaipur coaching”.' },
-  { n: 2, t: 'Keep Jaipur only', d: 'Each advertiser is checked for Jaipur signs: the city name, local areas, PIN codes 302xxx and the 0141 phone code.' },
+  { n: 1, t: 'Search ads', d: 'We search the public Meta Ads Library (India, active ads) for words like “Pune property” or “Delhi coaching”.' },
+  { n: 2, t: 'Keep it local', d: 'Each advertiser is checked for signs of your city: its name, local areas, PIN codes and the landline code.' },
   { n: 3, t: 'Rank the best', d: 'Every company gets a Performance Score from 0 to 100 based on its ads. Higher means stronger advertising.' },
   { n: 4, t: 'Get contacts', d: 'Phone, WhatsApp, email and website are taken from the ads, the Facebook page info and the company website.' },
 ];
@@ -13,8 +14,8 @@ const STEPS = [
 export default function HowItWorks() {
   return (
     <div className="doc">
-      <h1>How Jaipur Ad Finder works</h1>
-      <p className="lead">In four simple steps, the tool turns thousands of public ads into a ranked list of Jaipur businesses you can contact.</p>
+      <h1>How AdScout works</h1>
+      <p className="lead">In four simple steps, AdScout turns thousands of public ads into a ranked list of local businesses you can contact, in any of seven Indian cities.</p>
 
       <div className="flow">
         {STEPS.map((s) => (
@@ -44,18 +45,29 @@ export default function HowItWorks() {
       </table>
       <p><b>Levels:</b> 75+ Top performer · 50–74 Strong · 25–49 Moderate · below 25 Getting started.</p>
 
-      <h2>Jaipur match</h2>
+      <h2>Location match</h2>
       <table>
         <thead><tr><th>Sign found</th><th>Points</th></tr></thead>
         <tbody>
-          <tr><td>The word “Jaipur” (or जयपुर)</td><td>3</td></tr>
-          <tr><td>A Jaipur PIN code (302xxx / 303xxx)</td><td>3</td></tr>
-          <tr><td>A Jaipur landline number (0141)</td><td>3</td></tr>
-          <tr><td>A Jaipur area name, e.g. Malviya Nagar, Vaishali Nagar (up to 2)</td><td>2 each</td></tr>
-          <tr><td>“Pink City”</td><td>1</td></tr>
+          <tr><td>The city’s name, in English or a local script (e.g. Jaipur / जयपुर, Bengaluru / Bangalore)</td><td>3</td></tr>
+          <tr><td>A PIN code of the city</td><td>3</td></tr>
+          <tr><td>A landline number with the city’s STD code</td><td>3</td></tr>
+          <tr><td>A known local area, e.g. Malviya Nagar, Koramangala, Andheri (up to 2)</td><td>2 each</td></tr>
+          <tr><td>A city nickname, e.g. “Pink City” for Jaipur</td><td>1</td></tr>
         </tbody>
       </table>
-      <p><b>High</b> = 5+ points, <b>Medium</b> = 3–4, <b>Low</b> = 1–2. Advertisers with no Jaipur sign are removed.</p>
+      <p><b>High</b> = 5+ points, <b>Medium</b> = 3–4, <b>Low</b> = 1–2. Advertisers with no sign of the city are removed.</p>
+
+      <h2>Supported cities</h2>
+      <table>
+        <thead><tr><th>City</th><th>PIN codes</th><th>STD code</th><th>Local areas on the map</th></tr></thead>
+        <tbody>
+          {CITIES.map((c) => (
+            <tr key={c.id}><td>{c.name}</td><td>{c.pinPrefixes.map((p) => `${p}xxx`).join(', ')}</td><td>0{c.std}</td><td>{Object.keys(c.areas).length}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <p>{totalAreas()} areas in total. Map positions are approximate and show where advertisers cluster.</p>
 
       <h2>Good to know</h2>
       <ul>

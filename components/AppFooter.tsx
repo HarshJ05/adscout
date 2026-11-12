@@ -5,12 +5,13 @@ export function AppFooter() {
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <b>Jaipur Ad Finder</b>
-          <p>Find Jaipur businesses that advertise on Facebook and Instagram, see who does it best, and reach them.</p>
+          <b>AdScout</b>
+          <p>Find the local businesses in your city that advertise on Facebook and Instagram, see who does it best, and reach them.</p>
         </div>
         <div className="footer-col">
           <span>Product</span>
-          <Link href="/">Dashboard</Link>
+          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/leads">Lead tracker</Link>
           <Link href="/how-it-works">How it works</Link>
         </div>
         <div className="footer-col">

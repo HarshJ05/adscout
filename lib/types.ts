@@ -30,11 +30,11 @@ export interface Contacts {
   address: string | null;
 }
 
-export type JaipurLevel = 'High' | 'Medium' | 'Low';
+export type GeoLevel = 'High' | 'Medium' | 'Low';
 
-export interface JaipurCheck {
+export interface GeoCheck {
   points: number;
-  level: JaipurLevel;
+  level: GeoLevel;
   signals: string[];
 }
 
@@ -53,9 +53,10 @@ export interface Company {
   pageUrl: string | null;
   avatarUrl: string | null;
   category: string;
-  /** Jaipur area named in the ads (e.g. "Malviya Nagar"), or null when only the city is mentioned */
+  /** Local area named in the ads (e.g. "Malviya Nagar"), or null when only the city is mentioned */
   area: string | null;
-  jaipur: JaipurCheck;
+  /** How strongly the ads point to the chosen city */
+  geo: GeoCheck;
   ads: Ad[];
   activeAds: number;
   totalAds: number;
@@ -74,8 +75,10 @@ export interface Company {
 
 export interface ScanResult {
   mode: 'live' | 'demo';
+  /** Id of the city searched, e.g. "jaipur" (see lib/cities.ts) */
+  city: string;
   scannedAt: string;
   adsChecked: number;
   companies: Company[];
-  rejected: number; // advertisers dropped because no Jaipur signal was found
+  rejected: number; // advertisers dropped because no sign of the city was found
 }

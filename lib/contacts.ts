@@ -11,7 +11,10 @@ export const emptyContacts = (): Contacts => ({
 
 const SOCIAL_OR_SHORT = /(facebook\.com|fb\.com|fb\.me|instagram\.com|wa\.me|whatsapp\.com|m\.me|messenger\.com|l\.facebook\.com|bit\.ly|linktr\.ee)/i;
 
-/** Format an Indian number as +91 XXXXX XXXXX (mobile) or +91 141 XXX XXXX (Jaipur landline). */
+/** STD codes of the supported cities, longest first, so 141 is tried before 11-style codes. */
+const STD_CODES = ['141', '11', '20', '22', '40', '79', '80'];
+
+/** Format an Indian number as +91 XXXXX XXXXX (mobile) or +91 <STD> <number> (landline of a supported city). */
 export function formatPhone(raw: string): string | null {
   let d = raw.replace(/\D/g, '');
   if (d.startsWith('0091')) d = d.slice(4);
@@ -19,11 +22,14 @@ export function formatPhone(raw: string): string | null {
   if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
   if (d.length !== 10) return null;
   if (/^[6-9]/.test(d)) return `+91 ${d.slice(0, 5)} ${d.slice(5)}`;
-  if (d.startsWith('141')) return `+91 141 ${d.slice(3, 6)} ${d.slice(6)}`;
-  return null;
+  const std = STD_CODES.find((c) => d.startsWith(c));
+  if (!std) return null;
+  const rest = d.slice(std.length);
+  return `+91 ${std} ${rest.slice(0, rest.length - 4)} ${rest.slice(-4)}`;
 }
 
-const PHONE_RE = /(?:\+91[\s-]?|\b0)?(?:[6-9]\d{4}[\s-]?\d{5}|141[\s-]?\d{3}[\s-]?\d{4})\b/g;
+// Mobiles (with or without +91/0), and landlines written with a leading 0 or +91 (10 digits including the STD code).
+const PHONE_RE = /(?:(?:\+91[\s-]?|\b0)?[6-9]\d{4}[\s-]?\d{5}|(?:\+91[\s-]?|\b0)(?:141|11|20|22|40|79|80)(?:[\s-]?\d){6,8})\b/g;
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const WA_RE = /(?:wa\.me\/|api\.whatsapp\.com\/send\/?\?phone=|whatsapp\.com\/send\/?\?phone=)\+?(\d{10,13})/gi;
 const IG_RE = /instagram\.com\/([A-Za-z0-9._]{2,30})/gi;

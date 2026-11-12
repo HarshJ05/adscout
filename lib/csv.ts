@@ -8,12 +8,12 @@ const esc = (v: unknown) => {
 export function companiesToCsv(companies: Company[]): string {
   const head = [
     'Rank', 'Company', 'Business type', 'Performance score', 'Level', 'Active ads', 'Longest running ad (days)',
-    'New ads (30 days)', 'Platforms', 'Jaipur match', 'Phones', 'WhatsApp', 'Emails', 'Websites', 'Instagram',
+    'New ads (30 days)', 'Platforms', 'Location match', 'Phones', 'WhatsApp', 'Emails', 'Websites', 'Instagram',
     'Address', 'Facebook page', 'Meta Ads Library', 'Google Ads Transparency',
   ];
   const rows = companies.map((c, i) => [
     i + 1, c.name, c.category, c.score, c.tier, c.activeAds, c.longestRunningDays, c.newAds30d, c.platforms.join(' / '),
-    c.jaipur.level, c.contacts.phones.join(' / '), c.contacts.whatsapp.join(' / '), c.contacts.emails.join(' / '),
+    c.geo.level, c.contacts.phones.join(' / '), c.contacts.whatsapp.join(' / '), c.contacts.emails.join(' / '),
     c.contacts.websites.join(' / '), c.contacts.instagram.join(' / '), c.contacts.address ?? '', c.pageUrl ?? '',
     c.metaLibraryUrl, c.googleAdsUrl,
   ]);
